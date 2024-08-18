@@ -27,7 +27,7 @@ Spatial Reference: The input shapefile is reprojected to WGS84 if it is not alre
 Date Handling: The script parses the start and end dates and sets up the bounding box for the study area.
 # Data Download and Processing
 Login and Task Creation: If DonwloadPresent is False, the script logs into the NASA API, creates a task, and downloads the data.
-Data Cleaning: The script processes the downloaded LST and NDVI rasters, removing bad pixels based on quality control (QC) values.
+Data Cleaning: The script processes the downloaded LST and NDVI rasters, removing bad pixels based on quality assessment (QA) values.
 Valid Dates: The script identifies valid dates for LST and NDVI data and saves them to text files.
 # Calculations and Analysis
 Average LST Calculation: The script calculates the average LST for the previous 32 days for each valid date.
@@ -37,7 +37,7 @@ FBCI Calculation: The script calculates the Fire Danger Condition Index (FBCI) u
 Reprojected Shapefile: If the input shapefile is not in WGS84, it is reprojected and saved with a new name.
 Downloaded Data: Various raster files (e.g., LST, NDVI) are downloaded from the NASA API.
 Cleaned LST Rasters: LST rasters are processed to remove bad pixels and saved in a cleaned format.
-Valid Dates Files: Lists of valid dates for LST and NDVI are saved to text files (valid_lst_dates.txt and final_valid_dates.txt).
+Valid Dates Files: Lists of valid dates for LST and NDVI are saved to text files (valid_lst_dates.txt and filtered_valid_dates.txt).
 Statistics CSVs: Processing statistics are saved to CSV files (raster_processing_statistics.csv and final_raster_processing_statistics.csv).
 Average LST and NDVI Rasters: Average LST and NDVI rasters are calculated and saved.
 TVDI and FBCI Rasters: TVDI and FBCI rasters are calculated and saved, including an average FBCI raster.
