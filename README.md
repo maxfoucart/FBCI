@@ -45,5 +45,6 @@ Cleaned TVDI Raster: The TVDI raster is cleaned using a mask and saved.
 Exported Layouts: Layouts are exported to PNG files for each fire date.
 Log Files: Various log messages and status updates are printed to the console or saved to files.
 # Summary
-Before running the script, ensure that the input parameters are correctly set, including paths to shapefiles, task names, and date ranges. The script will process the data, perform various calculations, and save the results in the specified directories. The main outputs include cleaned and processed rasters, calculated indices, and exported layouts.
+Before running the script, ensure that the input parameters are correctly set, including paths to shapefiles, task names, and date ranges. The script will process the data, calculate the TVDI & FBCI, then save the results in the specified directories. The main outputs include cleaned and processed rasters, calculated indices, overall average of the indices and .csv with the statistics of the filtered data. The TVDI is based on https://github.com/hectornieto/pyTVDI/tree/master, but adapted to use Arcpy. 
+
 Important : If the script fails in any way before finishing calculating the outputs, be sure to delete all the files created in the "Output" folder, then run the code again with the correct input parameters.
