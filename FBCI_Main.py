@@ -10,21 +10,23 @@ import numpy as np
 from tqdm import tqdm
 import re
 from collections import defaultdict
-from pyTVDI_Backup_OSJ import tvdi
+from TVDI_calculator import tvdi
 import warnings
 env.overwriteOutput = True
 ##### Input
-name_set = True
+username = ""  # Update this line with the Appeears username
+password = "" # Update this line with the Appeears password
+
+name_set = False #If false the name of the task will be the date of the day
 AHTN = True # Already Have Task Number
-DonwloadPresent = True #Already Have downloaded the task
-task_id_input = "a3e8a2ae-4a94-426f-835c-9b56c8504e30"
-Task_Name = "AugustTest"
-DateStart = "12-07-24"
-DateEnd = "12-08-24"
-shapefile_path = r"F:\MemoireTest\SA_24Y\SA20Y.shp"
-roads_shapefile = r"C:\Users\fouca\Documents\DocumentsDATA\GEO Master 2\Q1 Master 2\Memoire\MemoireComplet\pythonProject\Roads.shp"
+DownloadPresent = True #Already Have downloaded the task
+task_id_input = "" #The task ID if a task already exists
+Task_Name = "FBCITest" #The name of the task
+DateStart = "12-07-24" #The start date of the task
+DateEnd = "12-08-24" #The end date of the task
+shapefile_path = r"F:\MemoireTest\SA_24Y\SA20Y.shp" #The shapefile that covers the study area
 FuelMap = "" #The Fuel map over the study area, leave empty if not available
-ras_eu = r'C:\Users\fouca\Documents\DocumentsDATA\GEO Master 2\Q1 Master 2\Memoire\FuelMap_LAEA\FuelMap2000_NFFL_LAEA.tif' #The fuel map over Europe
+FuelMapEU = r'C:\Users\fouca\Documents\DocumentsDATA\GEO Master 2\Q1 Master 2\Memoire\FuelMap_LAEA\FuelMap2000_NFFL_LAEA.tif' #The fuel map at Europe scale
 
 if name_set == False:
     today = datetime.now().date().strftime("%m-%d-%Y")
@@ -94,11 +96,9 @@ arcpy.env.extent = arcpy.Extent(bbox["west"], bbox["south"], bbox["east"],bbox["
 arcpy.env.workspace = inDir
 
 ###### APPEARS : Telechargement du LST
-#Set up identifiants
-username = "FoucartMa"  # Update this line
-password = "rG?mtb4M-w-@/7_"
+
 ###LOGIN
-if DonwloadPresent == False:
+if DownloadPresent == False:
     response = r.post('https://appeears.earthdatacloud.nasa.gov/api/login', auth=(username, password))
     token_response = response.json()
     print(token_response)
@@ -154,7 +154,7 @@ task = {
     "task_name": f"Task_{today}",
     "task_type": "area"
 }
-if DonwloadPresent == False:
+if DownloadPresent == False:
     if AHTN == False:
         token = token_response['token']
         response = r.post(
@@ -213,7 +213,7 @@ all_files = arcpy.ListRasters()
 available_dates = []
 
 from datetime import datetime, timedelta
-if DonwloadPresent == False:
+if DownloadPresent == False:
     def julian_to_date(julian_day, base_year=2000):
         base_date = datetime(base_year, 1, 1)
         date = base_date + timedelta(days=julian_day - 1)
@@ -317,6 +317,7 @@ else:
     with open(os.path.join(Dir, 'valid_available_dates.txt'), 'r') as date_file:
         unique_dates = [line.strip() for line in date_file]
 #re-assign the first raster
+all_files = arcpy.ListRasters()
 first_raster = arcpy.Raster(os.path.join(inDir, all_files[0]))
 arcpy.env.extent = first_raster.extent
 arcpy.env.outputCoordinateSystem = arcpy.Describe(shapefile_path).spatialReference
@@ -529,7 +530,7 @@ if arcpy.Exists(FuelMap):
     FM = arcpy.Raster(FuelMap)
 else:
     # Input raster
-    ras = arcpy.Raster(ras_eu)
+    ras = arcpy.Raster(FuelMapEU)
 
     # Define the remap ranges
 
@@ -643,7 +644,6 @@ for raster_name in list_new:
     elif "avg_lst_32days_until_" in raster_name:
         avg_lst_rasters.append(raster_name)
 
-
 warning_rasters, dates_to_remove = compute_tvdi_for_dates(valid_dates, ndvi_rasters, lst_rasters)
 
 #Adding manually the dates that got an error
@@ -725,18 +725,16 @@ for selected_date in tqdm(valid_dates, desc="Creating FBCI rasters"):
     selected_lst = [raster for raster in lst_rasters if selected_date in raster][0]
     tvdi_path = os.path.join(tvdifolder, f"TVDI_{selected_date}.tif")
     select_avg_lst = [raster for raster in avg_lst_rasters if selected_date in raster][0]
-    #select_min_lst = [raster for raster in avg_min_lst_rasters if selected_date in raster][0]
-    #select_max_lst = [raster for raster in avg_max_lst_rasters if selected_date in raster][0]
     calculate_FBCI(selected_ndvi, selected_lst, tvdi_path, FuelMap, select_avg_lst, MAXIMUM_ALL, MINIMUM_ALL)
 
-#Create an average FBCI out of every FBCI
+#Create an average FBCI out of every FBCI available
 arcpy.env.workspace = FBCIDir
 all_FBCI = arcpy.ListRasters()
 FBCI_rasters = []
 for raster in all_FBCI:
     FBCI_rasters.append(arcpy.Raster(raster))
 FBCI_avg = CellStatistics(FBCI_rasters, "MEAN")
-FBCI_avg.save(os.path.join(FBCIDir, "FBCI_Average.tif"))
+FBCI_avg.save(os.path.join(outDir, "FBCI_Average.tif"))
 ### Average for each year
 #Create a list of years
 years = []
@@ -751,7 +749,7 @@ for year in years:
         if f"{year}-" in raster:
             FBCI_rasters.append(arcpy.Raster(raster))
     FBCI_avg = CellStatistics(FBCI_rasters, "MEAN")
-    FBCI_avg.save(os.path.join(FBCIDir, f"FBCI_Average_{year}.tif"))
+    FBCI_avg.save(os.path.join(outDir, f"FBCI_Average_{year}.tif"))
 
 arcpy.env.workspace = TVDIDir
 all_TVDI = arcpy.ListRasters()
@@ -759,7 +757,7 @@ TVDI_rasters = []
 for raster in all_TVDI:
     TVDI_rasters.append(arcpy.Raster(raster))
 TVDI_avg = CellStatistics(TVDI_rasters, "MEAN")
-TVDI_avg.save(os.path.join(TVDIDir, "TVDI_Average.tif"))
+TVDI_avg.save(os.path.join(outDir, "TVDI_Average.tif"))
 
 
 #Using extract by mask to crop out the artefacts on the TVDI and FBCI rasters
@@ -769,18 +767,21 @@ arcpy.env.cellSize = first_raster.meanCellWidth
 shapefile_ExtractArt = r"C:\Users\fouca\Documents\ArcGIS\Projects\M_QA\RemoveArtefacts.shp"""
 #Extract by mask for TVDI
 
-TVDI = arcpy.Raster(os.path.join(TVDIDir, "TVDI_Average.tif"))
+TVDI = arcpy.Raster(os.path.join(outDir, "TVDI_Average.tif"))
 TVDI = ExtractByMask(TVDI, shapefile_path)
-TVDI.save(os.path.join(TVDIDir, "TVDI_Average_Cleaned.tif"))
+TVDI.save(os.path.join(outDir, "TVDI_Average.tif"))
 
+#Extract by mask for FBCI
 
-#arcpy.conversion.FeatureToRaster(in_features=roads_shapefile,field ="TYPE_DESC",  out_raster=os.path.join(Dir, "Roads.tif"), cell_size= ras.meanCellWidth)
+FBCI = arcpy.Raster(os.path.join(outDir, "FBCI_Average.tif"))
+FBCI = ExtractByMask(FBCI, shapefile_path)
+FBCI.save(os.path.join(outDir, "FBCI_Average.tif"))
 
-
-##LOGOUT -> Pour se deconnecter, à faire après l'import des données
-token = token_response['token']
-response = r.post(
-    'https://appeears.earthdatacloud.nasa.gov/api/logout',
-    headers={'Authorization': 'Bearer {0}'.format(token)})
-print(response.status_code)
+##LOGOUT -> Disconnect from Appeears server
+if DownloadPresent == False:
+    token = token_response['token']
+    response = r.post(
+        'https://appeears.earthdatacloud.nasa.gov/api/logout',
+        headers={'Authorization': 'Bearer {0}'.format(token)})
+    print(response.status_code)
 
