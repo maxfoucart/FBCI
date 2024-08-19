@@ -48,3 +48,7 @@ Log Files: Various log messages and status updates are printed to the console or
 Before running the script, ensure that the input parameters are correctly set, including paths to shapefiles, task names, and date ranges. The script will process the data, calculate the TVDI & FBCI, then save the results in the specified directories. The main outputs include cleaned and processed rasters, calculated indices, overall average of the indices and .csv with the statistics of the filtered data. The TVDI is based on https://github.com/hectornieto/pyTVDI/tree/master, but adapted to use Arcpy. 
 
 Important : If the script fails in any way before finishing calculating the outputs, be sure to delete all the files created in the "Output" folder, then run the code again with the correct input parameters.
+
+# Plotting
+
+The plotting_FBCI code provided creates maps of the four previous observations with 50 or more pixels present in the study area. It requires an ArcGIS project with a layout containing four different maps. 
